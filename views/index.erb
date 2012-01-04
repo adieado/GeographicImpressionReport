@@ -1,0 +1,136 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <link type=text/css rel=stylesheet href='/css/ui-lightness/jquery-ui-1.8.16.custom.css' />
+    <link type=text/css rel=stylesheet href='/css/style.css' />
+    <link type=text/css rel=stylesheet href='/css/ui.jqgrid.css' />
+    <script src="http://code.jquery.com/jquery-1.7.min.js"	type="text/javascript"></script>
+    <script src='/js/jquery-ui-1.8.16.custom.min.js'></script>
+    <script src='/js/i18n/grid.locale-en.js'></script>
+    <script src='/js/jquery.jqGrid.min.js'></script>
+
+    <script type="text/javascript">
+
+        function loadData (data) {
+            $('#geo_imps').GridUnload();
+            $('#geo_imps').empty().jqGrid({
+                datatype: "local",
+                height: '400',
+                scroll: false,
+                scrollRows: false,
+                colNames: ["Country","Country Code","Impressions"],
+                colModel: [
+                    {name: "country", index: "country", width: 120, sorttype: "string"},
+                    {name: "country_code", index: "country_code", width: 80, sorttype: "string"},
+                    {name: "impressions", index: "impressions", width: 120, sorttype:"integer"}
+                ],
+                multiselect: false,
+//                caption: "Domain CTR",
+                hidegrid: false,
+                width: '100%',
+                pager: '#gridpager',
+                excelExport: true,
+                viewrecords: true
+            });
+            for (var i = 0; i < data.length; i++) {
+                $("#geo_imps").jqGrid("addRowData", i + 1, data[i]);
+            }
+            $('#geo_imps').setGridWidth(840,true);
+            $("#geo_imps").setGridParam({ rowNum: 10 }).trigger("reloadGrid");
+            $("#geo_imps").navGrid('#gridpager',{ edit:false,add:false,del:false,search:false,refresh:false}).navButtonAdd('#gridpager',{caption: "EXPORT TO CSV", title:"Export to CSV", buttonicon:"ui-icon-bookmark", onClickButton: function(){
+                var from = $("#from").val();
+                var to = $("#to").val();
+                var publisher_id = $("#publisher_id").val();
+                var data = "from=" + from + "&to=" + to + "&pid=" + publisher_id;
+                $.download( '/get_publisher_geographic_data_csv', data, 'get')
+            }, position:"last"});
+        }
+
+
+        function fnGetData(){
+            var from = $("#from").val();
+            var to = $("#to").val();
+            var publisher_id = $("#publisher_id").val();
+            $.ajax({
+                type: "GET",
+                url: "get_publisher_geographic_data",
+                data: "from=" + from + "&to=" + to + "&pid=" + publisher_id,
+                beforeSend: function() {
+                                $('#loading_spinner').show();
+                            },
+                complete: function(){
+                                $('#loading_spinner').hide();
+                            },
+                success: function(msg){
+                    var myObject = JSON.parse(msg);
+                    loadData(myObject);
+                }
+            });
+        }
+        $.download = function(url, data, method){
+            //url and data options required
+             if( url && data ){
+                //data can be string of parameters or array/object
+                data = typeof data == 'string' ? data : jQuery.param(data);
+                //split params into form inputs
+                var inputs = '';
+                $.each(data.split('&'), function(){
+                    var pair = this.split('=');
+                    inputs+='<input type="hidden" name="'+ pair[0] +'" value="'+ pair[1] +'" />';
+                });
+                //send request
+                $('<form action="'+ url +'" method="'+ (method||'post') +'">'+inputs+'</form>')
+                .appendTo('body').submit().remove();
+            };
+        };
+
+        $(function() {
+            var dates = $( "#from, #to" ).datepicker({
+                defaultDate: "+1w",
+                changeMonth: true,
+                numberOfMonths: 1,
+                dateFormat: 'yy-mm-dd',
+                maxDate: "+0d",
+                onSelect: function( selectedDate ) {
+                    var option = this.id == "from" ? "minDate" : "maxDate",
+                        instance = $( this ).data( "datepicker" ),
+                        date = $.datepicker.parseDate(
+                            instance.settings.dateFormat ||
+                            $.datepicker._defaults.dateFormat,
+                            selectedDate, instance.settings );
+                    dates.not( this ).datepicker( "option", option, date );
+                }
+            });
+        });
+</script>
+
+</head>
+<body>
+    <div id="loading_spinner" class="spinner" style="display:none;">
+	    <img id="img-spinner" src="images/ajax-loader.gif" alt="Loading"/>
+    </div>
+    <div>
+        <form class="input_form">
+            <ol class="input_ol">
+                <li class="input_row">
+                    <span class="form_td">Publisher ID: </span>
+                    <span> <input type="text" id="publisher_id" class="inputbox"/></span>
+                </li>
+                <li class="input_row">
+                    <span>Start Date: </span>
+                    <span style="padding-left: 16px"><input type="text" id="from" name="from" class="inputbox"/></span>
+                    <span>End Date: </span>
+                    <span><input type="text" id="to" name="to" class="inputbox"/></span>
+                    <span><input type="button" value="Go" class="input_button" onclick="javascript:fnGetData();"/></span>
+                </li>
+            </ol>
+        </form>
+    </div>
+    <br/>
+    <div style="margin-left: 5px;">
+        <table id="geo_imps"></table>
+        <div id="gridpager"></div>
+    </div>
+</body>
+</html>
