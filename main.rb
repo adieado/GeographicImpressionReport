@@ -47,6 +47,12 @@ get '/get_publisher_geographic_data_csv' do
   csv_string
 end
 
+get '/get_existing_publishers' do
+  publishers = []
+  $kona18_3.query("select id,name from sites where name REGEXP '^#{params[:term]}.*' and current_status_id in(4,8,9) order by name asc").each {|r| publishers << {"p_id" => r[0].to_i, "label" => r[1].force_encoding('utf-8')}}
+  return publishers.to_json
+end
+
 def publisher_geo_imps(from,to,publisher_id)
   country_impressions = {}
   (Date.parse(from)..Date.parse(to)).to_a.each do |d|

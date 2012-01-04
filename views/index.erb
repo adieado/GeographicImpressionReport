@@ -102,7 +102,22 @@
                     dates.not( this ).datepicker( "option", option, date );
                 }
             });
+
+            $("#publisher_name").autocomplete({
+                minLength:3,
+                delay:5,
+                source: "get_existing_publishers",
+                select: function( event, ui ) {
+                    $('#publisher_name').val(ui.item.label);
+                    $('#publisher_id').val(ui.item.p_id);
+                },
+                search: function (event, ui){
+//                  $('#publisher_id').val(ui.item.p_id);
+                }
+            });
         });
+
+
 </script>
 
 </head>
@@ -114,8 +129,9 @@
         <form class="input_form">
             <ol class="input_ol">
                 <li class="input_row">
-                    <span class="form_td">Publisher ID: </span>
-                    <span> <input type="text" id="publisher_id" class="inputbox"/></span>
+                    <span class="form_td">Publisher Name: </span>
+                    <span> <input type="text" id="publisher_name" class="inputbox"/></span>
+                    <input id="publisher_id" name="publisher_id" type="hidden"/>
                 </li>
                 <li class="input_row">
                     <span>Start Date: </span>
